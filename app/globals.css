@@ -174,3 +174,19 @@ input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-so
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+/* Navigation de l'espace de jeu. */
+.nav {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--muted) 30%, transparent);
+}
+.nav a { color: var(--ink); text-decoration: none; }
+.nav a[aria-current='page'] { color: var(--accent); font-weight: 600; }
+
+/* Bouton présenté comme un lien. */
+button.link { background: none; color: var(--accent); padding: 0; }
