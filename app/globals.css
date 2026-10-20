@@ -190,3 +190,8 @@ input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-so
 
 /* Bouton présenté comme un lien. */
 button.link { background: none; color: var(--accent); padding: 0; }
+
+/* Indicateur de connexion temps réel. */
+.status { font-size: 0.85rem; color: var(--muted); }
+.status[data-status='open'] { color: var(--ok); }
+.status[data-status='reconnecting'] { color: var(--warn); }
