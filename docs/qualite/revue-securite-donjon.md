@@ -1,0 +1,31 @@
+# Revue de sécurité du Donjon : dissimulation d'informations et intégrité du jeu
+
+- Date : 2026-10-20
+- Périmètre : API du module Donjon, canal temps réel des expéditions, tirages au sort.
+- Références : OWASP Top 10 (A01 Broken Access Control, A04 Insecure Design).
+
+| N° | Exigence | Vérification | Constat | Statut |
+| --- | --- | --- | --- | --- |
+| D1 | La vue d'une expédition ne contient ni la graine ni le contenu des salles non explorées | Test « ne transmet ni la graine ni le contenu des salles suivantes » | Le test passe. La vue est construite champ par champ dans `view.ts` : `seed`, `rooms` et `choices` n'y figurent pas. Observé en local : la vue renvoyée par l'API ne contient aucune de ces clés. | conforme |
+| D2 | L'action choisie par un héros n'est connue que de son joueur jusqu'à la résolution de la manche | Tests « cache l'action choisie par les autres héros » et « ne révèle pas l'action d'un héros aux autres joueurs » ; outils de développement | Les tests passent. Observé en local, partie à deux joueurs : Alice choisit « soigner » ; la vue de Bob indique Alice prête, avec une action nulle, et la réponse de l'API ne contient pas `heal` ; le flux SSE de Bob reçoit `ActionSubmitted` avec `"data":{}`. Trois protections : vue filtrée (domaine), API qui ne renvoie que cette vue, canal réservé aux membres et discret. | conforme |
+| D3 | Le canal d'une expédition n'est accessible qu'à ses membres | Test « réserve le canal d'une expédition à ses membres (403) » | Le test passe. Observé en local : un joueur connecté non membre reçoit 403 `FORBIDDEN` sur `/api/stream/dungeon-<id>`. La règle consulte l'expédition à l'ouverture du flux ; un joueur ne pouvant pas quitter une expédition, cette évaluation unique suffit. | conforme |
+| D4 | Le canal d'une expédition ne transmet aucune donnée d'événement, ni par le flux, ni par la route de repli | Tests du bloc « Canal discret » et « signale l'action d'un héros sans la révéler » | Les tests passent. La fonction `present` de `stream-api.ts` est appliquée aux deux routes, et ne transmet que le flux, la version et le type, avec des données vides. Observé en local : `"data":{}` sur le flux ; la route de repli est en outre refusée (403) à un non-membre. | conforme |
+| D5 | Un joueur ne peut agir qu'en son propre nom | Lecture de `api.ts` : aucune route n'accepte d'identifiant de joueur | Dans `api.ts`, chaque route lit le joueur dans `c.var.userId` et `c.var.userName`, renseignés par `requireUser`. Seuls l'identifiant de l'expédition (`param('id')`) et le contenu de l'action (validé par Zod) proviennent de la requête. | conforme |
+| D6 | Seul l'hôte lance l'expédition, et seul le héros dont c'est le tour ouvre une porte | Tests « ne laisse que l'hôte lancer l'expédition » et « fait ouvrir les portes à tour de rôle » | Les tests passent. Observé en local : Bob, non hôte, reçoit 403 `NOT_HOST` en lançant l'expédition ; les portes ont été ouvertes à tour de rôle. | conforme |
+| D7 | Un joueur ne peut ni choisir ni prévoir le résultat d'un tirage au sort | Lecture de `dungeon-service.ts` : graine tirée par le serveur ; exigence D1 | Dans `dungeon-service.ts`, la graine est tirée par `crypto.getRandomValues` et l'identifiant par `crypto.randomUUID`, côté serveur ; aucun des deux ne provient de la requête. La graine ne figure pas dans la vue (D1). Le générateur n'étant pas cryptographique, la confidentialité repose sur ce secret. | conforme |
+| D8 | L'échéance d'une manche est appréciée par l'horloge du serveur | Commande d'échéance envoyée avant l'échéance | Observé en local : une commande d'échéance envoyée environ 30 secondes avant l'échéance répond 200 avec la vue inchangée (manche 1, aucune manche résolue) : le serveur, qui ne constate aucune échéance avec sa propre horloge, n'a rien enregistré. | conforme |
+| D9 | Une action destinée à une manche déjà résolue est refusée | Test « refuse un choix pour une manche déjà résolue » | Le test passe : l'action est refusée avec l'erreur `ROUND_OVER`, qui indique le numéro de la manche en cours. | conforme |
+| D10 | Connaître l'adresse d'une expédition ne permet pas d'y agir sans en être membre | Action envoyée par un joueur qui n'est pas membre | Observé en local avec un compte non membre : action 403 `NOT_A_MEMBER` ; ouverture d'une porte et tentative pour rejoindre une expédition lancée refusées (409 `WRONG_PHASE`) ; canal et route de repli 403. Reste possible : consulter l'expédition à partir de son adresse (200, `isMember: false`). Ce choix est volontaire, puisqu'il permet de rejoindre une expédition à partir de son adresse ; la vue ne contient que des informations publiques (ni graine, ni salles, ni choix), et l'identifiant est un UUID tiré au hasard, qui ne peut pas être deviné. Risque accepté pour la consultation. | conforme |
+
+## Synthèse
+
+- 10 exigences conformes, 0 non conforme, 0 risque accepté au sens d'un écart à une exigence.
+- Un risque résiduel est accepté et justifié dans D10 : la consultation d'une expédition par un
+  joueur qui en connaît l'adresse, sans possibilité d'y agir ni d'en écouter le canal.
+- Actions décidées :
+  - tout nouveau champ de l'état d'une expédition devra être ajouté explicitement à la vue
+    (construction champ par champ), après examen de ce qu'il révèle ;
+  - toute nouvelle route du Donjon lira le joueur dans `c.var.userId`, et ne recevra jamais
+    d'identifiant de joueur dans la requête ;
+  - le rythme des notifications du canal discret (délai entre le début d'une manche et chaque
+    `ActionSubmitted`) reste observable ; ce risque est faible et n'est pas traité à ce stade.
