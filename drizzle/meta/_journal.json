@@ -15,6 +15,13 @@
       "when": 1792482273311,
       "tag": "0001_identite",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792565240415,
+      "tag": "0002_projections",
+      "breakpoints": true
     }
   ]
 }
