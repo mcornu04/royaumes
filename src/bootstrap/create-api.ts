@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { createDungeonModule } from '@/modules/dungeon'
+import { createForgeModule } from '@/modules/forge'
 import { createMarketModule } from '@/modules/market'
 import { createRankingModule } from '@/modules/ranking'
 import { createRealmModule, createRemoteRealmModule } from '@/modules/realm'
@@ -86,6 +87,9 @@ export function createApi({
   })
 
   const tavern = createTavernModule({ db, clock })
+  // La Forge paie ses commandes par une saga avec le Village : elle déclenche, comme le
+  // Marché, la distribution après ses commandes et ses consultations.
+  const forge = createForgeModule({ store, dispatch: () => dispatcher.dispatch(), clock })
 
   // Droits des joueurs : chaque module fournit ses données personnelles. L'identité vient
   // en dernier : tant qu'elle n'est pas effacée, le joueur peut relancer un effacement interrompu.
@@ -97,6 +101,7 @@ export function createApi({
       market.personalData,
       ranking.personalData,
       tavern.personalData,
+      forge.personalData,
       createIdentityPersonalData(db),
     ],
     clock,
@@ -105,6 +110,7 @@ export function createApi({
   // Gestionnaires de messages, déclarés par les modules et confiés au distributeur.
   dispatcher.register(realm.handlers)
   dispatcher.register(market.handlers)
+  dispatcher.register(forge.handlers)
 
   // Règles d'accès aux canaux temps réel, déclarées par les modules.
   const policies: ChannelPolicy[] = [
@@ -113,6 +119,7 @@ export function createApi({
     ranking.channelPolicy,
     market.channelPolicy,
     tavern.channelPolicy,
+    forge.channelPolicy,
   ]
 
   // 2. Application principale : toutes ses routes sont préfixées par /api.
@@ -179,6 +186,7 @@ export function createApi({
   app.use('/ranking/*', requireUser(auth))
   app.use('/market/*', requireUser(auth))
   app.use('/tavern/*', requireUser(auth))
+  app.use('/forge/*', requireUser(auth))
   app.use('/account', requireUser(auth))
   app.use('/account/*', requireUser(auth))
   app.use('/stream/*', requireUser(auth))
@@ -192,6 +200,7 @@ export function createApi({
     .route('/ranking', ranking.api)
     .route('/market', market.api)
     .route('/tavern', tavern.api)
+    .route('/forge', forge.api)
     .route('/account', createPrivacyApi(privacy))
     .route('/stream', createRealtimeApi({ store, policies, ...realtime }))
 }
