@@ -13,6 +13,7 @@ export const NAV = [
   { href: '/market', kind: 'market', label: 'Marché' },
   { href: '/tavern', kind: 'tavern', label: 'Taverne' },
   { href: '/forge', kind: 'forge', label: 'Forge' },
+  { href: '/tournament', kind: 'tournament', label: 'Tournoi' },
 ]
 
 /** Cadre de l'espace de jeu : navigation, nom du joueur, accès à ses données et déconnexion. */

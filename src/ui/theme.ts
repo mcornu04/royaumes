@@ -36,6 +36,8 @@ export const theme: Record<string, Look> = {
   stoneshield: { glyph: '🛡️', label: 'Bouclier de pierre' },
   runehammer: { glyph: '🔨', label: 'Marteau runique' },
   kingsblade: { glyph: '🗡️', label: 'Lame du Roi' },
+  tournament: { glyph: '🏟️', label: 'Tournoi' },
+  knight: { glyph: '🏇', label: "Chevalier de l'ordinateur" },
 }
 
 /** Apparence d'une entité ; une apparence neutre si l'entité n'est pas décrite. */
