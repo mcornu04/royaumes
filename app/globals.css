@@ -19,20 +19,23 @@
   background: var(--bg);
 }
 
-/* Variante appliquée lorsque le système de l'utilisateur est en thème sombre. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #1d1915;
-    --bg-deep: #151210;
-    --panel: #28221c;
-    --ink: #f2e8da;
-    --muted: #b3a38f;
-    --accent: #d79b5b;
-    --accent-strong: #e8b47c;
-    --accent-soft: rgb(215 155 91 / 0.14);
-    --border: rgb(242 232 218 / 0.09);
-    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.25);
-  }
+/*
+ * Thème sombre, appliqué quel que soit le réglage du système : l'habillage du jeu (barre et
+ * panneaux de métal, braises, or) est conçu pour un fond sombre. color-scheme demande aussi au
+ * navigateur des contrôles natifs sombres (barres de défilement, listes déroulantes).
+ */
+:root {
+  color-scheme: dark;
+  --bg: #1d1915;
+  --bg-deep: #151210;
+  --panel: #28221c;
+  --ink: #f2e8da;
+  --muted: #b3a38f;
+  --accent: #d79b5b;
+  --accent-strong: #e8b47c;
+  --accent-soft: rgb(215 155 91 / 0.14);
+  --border: rgb(242 232 218 / 0.09);
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.25);
 }
 
 * { box-sizing: border-box; }
@@ -440,9 +443,7 @@ button.glow {
   --title-gold: #9a5f1c;
   --button: linear-gradient(180deg, #b8742e 0%, #8a4f1a 100%);
 }
-@media (prefers-color-scheme: dark) {
-  :root { --title-gold: #e2ad5a; }
-}
+:root { --title-gold: #e2ad5a; }
 
 /* Barre de navigation : une plaque de métal sombre, le module courant éclairé par les braises. */
 .nav {
