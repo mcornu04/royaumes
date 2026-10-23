@@ -43,6 +43,8 @@ export function createQuestsModule({
 
   // Canal global et discret, sur le modèle de celui du Classement : il annonce les événements
   // qui font avancer les quêtes, ainsi que les récompenses, et chaque tableau se relit.
+  // DETTE TECHNIQUE (docs/qualite/dette-technique.md, Quêtes) : chaque action d'un joueur fait
+  // relire le tableau de tous les joueurs connectés, et non du seul joueur concerné.
   const channelPolicy: ChannelPolicy = {
     prefix: QUESTS_CHANNEL,
     canSubscribe: (channel) => channel === QUESTS_CHANNEL,

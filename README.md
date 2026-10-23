@@ -83,6 +83,7 @@ Un module n'est accessible depuis l'extérieur que par ses entrées publiques : 
 | `market` | Marché : échanges de ressources entre joueurs, par une saga orchestrée | `/api/market` |
 | `tavern` | Taverne : salon de discussion commun et présence des joueurs, sans Event Sourcing | `/api/tavern` |
 | `forge` | Forge : commande de pièces payées en ressources du village par une saga, durée de forge, armurerie et rang du forgeron | `/api/forge` |
+| `quests` | Quêtes du jour : trois quêtes par joueur et par jour dans les autres modules, cochées en temps réel, récompensées en or, et un coffre du jour ; tableau affiché à droite de chaque écran | `/api/quests` |
 | `tournament` | Tournoi : tournois à élimination directe entre joueurs et chevaliers pilotés par l'ordinateur, combats déduits d'une graine, récompenses en or | `/api/tournament` |
 
 ## Temps réel
@@ -94,14 +95,14 @@ propriétaire du village, le canal `forge-<joueur>` au seul propriétaire de l'a
 `dungeon-<expédition>` aux seuls membres de l'expédition.
 
 La plupart des canaux correspondent à un flux du journal d'événements. Les canaux `ranking`,
-`market` et `tournaments` sont des canaux globaux : ils suivent, dans tout le journal, les événements qui
+`market`, `tournaments` et `quests` sont des canaux globaux : ils suivent, dans tout le journal, les événements qui
 modifient le classement ou la liste des offres, et ne transmettent que ceux qui sont
 enregistrés après leur ouverture.
 
 Le canal `tavern` ne lit pas le journal, mais la table des messages de la Taverne : il
 transmet chaque nouveau message, avec son contenu, à tous les joueurs connectés.
 
-Les canaux du Donjon, du Classement, du Marché et du Tournoi sont discrets : ils ne transmettent que la position,
+Les canaux du Donjon, du Classement, du Marché, du Tournoi et des Quêtes sont discrets : ils ne transmettent que la position,
 le type et la version des événements, et chaque navigateur relit sa propre vue, filtrée
 par le serveur.
 
@@ -124,6 +125,10 @@ La Forge paie ses commandes par la même saga avec le Village : prélèvement du
 remboursement intégral à l'annulation (ADR 0011). Le Tournoi lit les événements du Village et de
 la Forge pour établir le profil des combattants, et verse ses récompenses au village des joueurs
 par la boîte d'envoi ; le Classement compte les tournois remportés (ADR 0012).
+
+Les Quêtes du jour lisent l'activité du Village, de la Forge, du Donjon, du Tournoi et du Marché
+dans le journal, et celle de la Taverne par une fonction de son point d'entrée ; elles versent
+l'or de leurs récompenses au Village par la boîte d'envoi (ADR 0013).
 
 ## Service Village extrait
 
@@ -152,7 +157,8 @@ page « Mes données » :
 
 La Forge et le Tournoi copient le nom du joueur dans leurs événements : le poinçon gravé sur
 chaque pièce, et le nom des inscrits d'un tournoi. Ces noms sont remplacés lors de l'effacement,
-et le profil de combattant du Tournoi est supprimé.
+et le profil de combattant du Tournoi est supprimé. Les Quêtes conservent l'activité quotidienne
+de chaque joueur dans les autres modules ; elle est supprimée avec son compte.
 
 Les messages de la Taverne sont conservés trente jours, et la présence d'un joueur deux
 minutes après son dernier signal. Ces durées sont appliquées à chaque lecture, et chaque jour
@@ -205,11 +211,13 @@ sans la première ; sans la seconde, la route des tâches quotidiennes reste fer
 - [Revue de sécurité du Marché](docs/qualite/revue-securite-marche.md)
 - [Revue de sécurité de la Forge](docs/qualite/revue-securite-forge.md)
 - [Revue de sécurité du Tournoi](docs/qualite/revue-securite-tournoi.md)
+- [Revue de sécurité des Quêtes](docs/qualite/revue-securite-quetes.md)
 - [Registre des traitements](docs/rgpd/registre-traitements.md)
 - [Revue de conformité au RGPD](docs/rgpd/revue-conformite.md)
 - [Bilan technique](docs/bilan-technique.md)
 - [Rendu de l'évaluation](docs/evaluation/rendu.md), et les fiches de cadrage de la
-  [Forge](docs/evaluation/fiche-cadrage-forge.md) et du [Tournoi](docs/evaluation/fiche-cadrage-tournoi.md)
+  [Forge](docs/evaluation/fiche-cadrage-forge.md), du [Tournoi](docs/evaluation/fiche-cadrage-tournoi.md)
+  et des [Quêtes](docs/evaluation/fiche-cadrage-quetes.md)
 
 ## Conventions
 
@@ -251,6 +259,10 @@ joueur au village et à l'armurerie très avancés remporte presque tous les tou
 chevaliers de l'ordinateur ayant des caractéristiques fixes. Les coups d'un duel sont transmis
 au début de son tour, pour que l'arène les rejoue : l'issue est donc lisible dans la réponse de
 l'API jusqu'à trente secondes à l'avance (risque accepté, revue du Tournoi).
+
+Les quêtes se renouvellent à minuit UTC, soit 1 h ou 2 h du matin en France. Chaque action d'un
+joueur fait relire le tableau des quêtes de tous les joueurs connectés, et l'activité des jours
+passés n'est pas encore retirée de la base.
 
 Le service Village extrait n'est pas prêt pour la production : ses migrations, la pagination
 de son flux publié et la distribution de sa boîte d'envoi restent à traiter. Ces limites, et

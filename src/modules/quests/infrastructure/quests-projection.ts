@@ -44,7 +44,11 @@ interface OfferPublishedData {
 /** Identifiant tiré du nom d'un flux : « village-7f3a » donne « 7f3a ». */
 const idFrom = (event: StoredEvent, prefix: string) => event.stream.slice(prefix.length)
 
-/** Compte une activité d'un joueur, le jour où elle a eu lieu. */
+/**
+ * Compte une activité d'un joueur, le jour où elle a eu lieu.
+ * DETTE TECHNIQUE (docs/qualite/dette-technique.md, Quêtes) : l'activité des jours passés n'est
+ * jamais retirée de la table, alors que seule celle du jour sert aux quêtes.
+ */
 async function count(tx: DbTransaction, playerId: string, at: number, kind: Activity) {
   await tx
     .insert(activity)

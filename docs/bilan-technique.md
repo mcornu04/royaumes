@@ -12,10 +12,10 @@ revues. Il s'adresse à la personne qui reprendrait le projet.
 
 | Élément | Valeur |
 | --- | --- |
-| Modules métier | 8 : `realm`, `dungeon`, `market`, `ranking`, `tavern`, `system`, et pour l'évaluation `forge` et `tournament` |
+| Modules métier | 9 : `realm`, `dungeon`, `market`, `ranking`, `tavern`, `system`, et pour l'évaluation `forge`, `tournament` et `quests` |
 | Briques de la plateforme | 9 : `auth`, `cron`, `db`, `event-store`, `http`, `outbox`, `privacy`, `projection`, `realtime` ; un service extrait, `services/village` |
-| Lignes de code, hors tests | 12 390 (`src/` et `app/`), contre 8 363 à `td11-fin` |
-| Fichiers de test, nombre de tests | 38 fichiers, 300 tests, contre 33 fichiers et 232 tests à `td11-fin` |
+| Lignes de code, hors tests | 13 925 (`src/` et `app/`), contre 8 363 à `td11-fin` |
+| Fichiers de test, nombre de tests | 40 fichiers, 321 tests, contre 33 fichiers et 232 tests à `td11-fin` |
 | Commits | 79 à l'étiquette `td11-fin` ; ceux de l'évaluation par `git log --oneline td11-fin..eval-fin` |
 | Hébergement | Vercel (Francfort), base Neon (Francfort) |
 
@@ -29,6 +29,7 @@ revues. Il s'adresse à la personne qui reprendrait le projet.
 | `system` | Aucun | 73 |
 | `forge` | Event Sourcing, saga avec le Village | 1 240, dont 313 pour l'écran |
 | `tournament` | Event Sourcing, projection des profils et des tournois | 2 035, dont 641 pour l'écran |
+| `quests` | Event Sourcing (récompenses), projection de l'activité des autres modules | 1 268, dont 351 pour le tableau |
 
 Le Classement compte désormais 492 lignes : sa projection lit aussi les tournois remportés.
 
@@ -52,25 +53,26 @@ TD11, sur chaque répertoire de `src/modules/`, `src/platform/` et `src/services
 | 0010 | Atelier de la Forge dans le journal, échéance paresseuse | Lecture de l'armurerie par le Tournoi (évaluation) | A tenu : le Tournoi lit `ItemCollected` sans dépendre du code de la Forge, et aucune migration n'a été nécessaire. |
 | 0011 | Paiement de la Forge par une saga avec le Village | Ajout d'un deuxième demandeur au Village | A tenu : le Village n'a pas été modifié, ce qui confirme le choix de l'adresse de retour de l'ADR 0007 ; la compensation rembourse le stock à l'identique. |
 | 0012 | Tournoi alimenté par le langage publié, combats déduits d'une graine | Réglage de l'équilibre par simulation ; ajout des tournois au Classement | A tenu, au prix d'une modification consignée du Classement (projection en version 3, colonne ajoutée par une migration de son schéma) et d'une constante de plus dans les contrats du Village. |
+| 0013 | Quêtes du jour alimentées par l'activité des autres modules | Tableau mis à jour en temps réel depuis n'importe quel écran | A tenu : cinq modules lus sans modification, la Taverne par une seule fonction de son point d'entrée ; prix : un canal global qui fait relire tous les tableaux (DT-017). |
 
 ## 3. La qualité
 
 | Caractéristique | Indicateur | Valeur | Appréciation |
 | --- | --- | --- | --- |
-| Adéquation fonctionnelle | Tests réussis ; couverture des domaines | 300 tests réussis (232 à `td11-fin`) ; domaines couverts à 99,7 % des lignes (592 sur 594) | Satisfaisante : les règles du jeu, dont les sept règles de la Forge et les sept du Tournoi, sont vérifiées sans base ni réseau. |
+| Adéquation fonctionnelle | Tests réussis ; couverture des domaines | 321 tests réussis (232 à `td11-fin`) ; domaines couverts à 99,7 % des lignes (658 sur 660) | Satisfaisante : les règles du jeu, dont les sept règles de la Forge, les sept du Tournoi et les six des Quêtes, sont vérifiées sans base ni réseau. |
 | Efficacité des performances | Débit et p99 des lectures ; respect du budget | De 619 (Marché) à 983 (Taverne) requêtes par seconde, p99 de 40 à 64 ms sous 20 connexions ; budget (`perf/budget.json` : p99 < 500 ms, 0 erreur) respecté (`perf/apres.json`) | Satisfaisante localement ; la mesure, faite avec PGlite, ne prédit pas les performances sur Vercel et Neon, elle ne sert qu'à comparer. |
 | Fiabilité | Tests de concurrence, de reprise et d'idempotence ; messages abandonnés | Concurrence optimiste, remise en double, acceptations simultanées et reprise après panne testées ; messages abandonnés signalés et relançables (`scripts/dead-letters.ts`) | Satisfaisante : aucune ressource n'est créée ni perdue, même lors d'une panne du service extrait. |
-| Sécurité | Exigences des revues de sécurité | 61 exigences : 55 conformes, 5 risques acceptés, 1 non conforme (section 5) ; 40 exigences et aucune non conforme à `td11-fin` | Satisfaisante ; la seule non-conformité (T6, inscription à plusieurs tournois) est consignée en DT-015. |
-| Maintenabilité | Règles d'architecture ; fonctions d'aptitude ; couverture | 8 règles de dépendance, 0 violation (inchangé) ; 3 fonctions d'aptitude (2 à `td11-fin`) ; 74,1 % des lignes couvertes, contre 75 % à `td11-fin` (`pnpm test:coverage`) | Satisfaisante pour le code serveur (modules 94,5 %, Forge 99,3 % et Tournoi 97,1 % hors écrans, plateforme 88 %). La légère baisse de la couverture globale vient des deux nouveaux écrans : l'interface (462 lignes) reste couverte par aucun test automatique, et a été vérifiée à la main. |
+| Sécurité | Exigences des revues de sécurité | 72 exigences : 64 conformes, 6 risques acceptés, 2 non conformes (section 5) ; 40 exigences et aucune non conforme à `td11-fin` | Satisfaisante ; les deux non-conformités (T6, inscription à plusieurs tournois ; Q11, activité des jours passés conservée) sont consignées en DT-015 et DT-018. |
+| Maintenabilité | Règles d'architecture ; fonctions d'aptitude ; couverture | 8 règles de dépendance, 0 violation (inchangé) ; 3 fonctions d'aptitude (2 à `td11-fin`) ; 72,5 % des lignes couvertes, contre 75 % à `td11-fin` (`pnpm test:coverage`) | Satisfaisante pour le code serveur (modules 93,5 % ; Forge 99,3 %, Tournoi 97,1 % et Quêtes 90,8 % hors écrans ; plateforme 88 %). La baisse de la couverture globale vient des nouveaux écrans : l'interface (558 lignes) reste couverte par aucun test automatique, et a été vérifiée à la main. |
 | Flexibilité | Extraction d'un module ; changement de base entre local et production | Village exécuté dans un second processus, avec sa propre base ; PGlite en local, Neon en production, selon `DATABASE_URL` | Démontrée : l'extraction est réversible sans migration, et la production fonctionne sans le service. |
 
 ## 4. La dette technique
 
 | Indicateur | Valeur |
 | --- | --- |
-| Entrées consignées | 16 (12 à `td11-fin`) |
+| Entrées consignées | 18 (12 à `td11-fin`) |
 | Entrées remboursées, dont à l'échéance prévue | 8, toutes à l'échéance prévue ou avant (DT-001 à DT-007, et DT-016 dès l'évaluation) |
-| Entrées ouvertes | 8 : DT-008 et DT-009 (revue de conformité), DT-010 à DT-012 (service extrait), DT-013 (Forge), DT-014 et DT-015 (Tournoi) |
+| Entrées ouvertes | 10 : DT-008 et DT-009 (revue de conformité), DT-010 à DT-012 (service extrait), DT-013 (Forge), DT-014 et DT-015 (Tournoi), DT-017 et DT-018 (Quêtes) |
 
 Analyse : les sept premières entrées ont toutes été remboursées au TD prévu, ce qui montre que
 le registre a été un outil de pilotage, et non un simple inventaire : chaque raccourci a été
@@ -80,8 +82,8 @@ revue de conformité du TD10 avec une échéance au TD11, n'ont pas été rembou
 échéance a été reportée avant toute ouverture publique du jeu, qui les rendrait bloquantes.
 Les trois autres entrées ouvertes concernent le service extrait, qui n'est pas en production :
 elles n'ont d'effet qu'en cas de déploiement, et l'ADR 0009 en fait une condition préalable.
-Les quatre entrées ajoutées pour l'évaluation sont des raccourcis délibérés de la Forge et du
-Tournoi, signalés dans le code dès leur écriture ; leur échéance est un signe observable (charge,
+Les six entrées ajoutées pour l'évaluation sont des raccourcis délibérés de la Forge, du Tournoi
+et des Quêtes, signalés dans le code dès leur écriture ; leur échéance est un signe observable (charge,
 nombre de tournois, ouverture publique), et non un TD. L'une d'elles, DT-016 (tournois terminés
 jamais retirés de la liste), a été remboursée avant le rendu, par une tâche quotidienne propre
 au Tournoi. Aucune dette n'a été découverte par
@@ -97,6 +99,7 @@ hasard : toutes proviennent d'une revue ou d'un choix délibéré.
 | Conformité au RGPD | 10 | 7 | 2 non conformes (R8, R9), 1 risque accepté (R10) | DT-008 (R8) et DT-009 (R9), inscrites au registre de la dette |
 | Sécurité de la Forge | 10 | 9 | 1 risque accepté (F10) | Aucune non conforme ; limite DT-013 inscrite au registre |
 | Sécurité du Tournoi | 11 | 9 | 1 non conforme (T6), 1 risque accepté (T10) | DT-015 (T6), inscrite au registre de la dette |
+| Sécurité des Quêtes | 11 | 9 | 1 non conforme (Q11), 1 risque accepté (Q10) | DT-018 (Q11), inscrite au registre de la dette |
 
 Chaque action ouverte figure dans le registre de la dette technique.
 
@@ -107,16 +110,16 @@ Chaque action ouverte figure dans le registre de la dette technique.
 | 1 | La charge des flux temps réel croît avec le nombre de joueurs connectés : chaque flux relit le journal deux fois par seconde (ADR 0003) | Temps de réponse de la base Neon qui augmente aux heures d'affluence, sans hausse du nombre de commandes ; consommation de calcul Neon proche du quota | Mesurer la charge avec un test qui ouvre des flux simultanés ; si besoin, mutualiser la lecture du journal entre les flux d'une même instance, ou passer à une notification par la base (`LISTEN/NOTIFY`) |
 | 2 | La croissance du journal allonge la reconstruction des projections et l'effacement d'un compte, qui le parcourent en entier (ADR 0006 et 0008) | Durée d'une reconstruction ou d'un effacement qui approche la durée maximale d'une fonction Vercel | Indexer les flux par joueur pour l'effacement ; reconstruire les projections hors des requêtes des joueurs, par une tâche dédiée |
 | 3 | L'interface n'est vérifiée par aucun test automatique, alors qu'elle porte désormais l'arène et le tableau du Tournoi ; deux dettes de conformité et une non-conformité du Tournoi restent ouvertes (DT-008, DT-009, DT-015) | Une régression signalée par un joueur avant d'être vue par un test ; toute ouverture du jeu à des joueurs extérieurs | Écrire un test de bout en bout (Playwright) d'un tournoi et d'un échange au Marché ; rembourser DT-008, DT-009 et DT-015 avant toute ouverture publique |
-| 4 | Le Tournoi et le Classement dépendent du nom et des données d'événements d'autres modules (langage publié), sans vérification par le typage | Un événement du Village, de la Forge ou du Tournoi renommé : profils ou classement qui cessent d'évoluer, sans erreur | Ajouter un test de contrat par événement publié lu par un autre module, comme ceux du service Village extrait |
+| 4 | Le Tournoi, les Quêtes et le Classement dépendent du nom et des données d'événements d'autres modules (langage publié), sans vérification par le typage | Un événement d'un module renommé : profils, quêtes ou classement qui cessent d'évoluer, sans erreur | Ajouter un test de contrat par événement publié lu par un autre module, comme ceux du service Village extrait |
 
 ## 7. Conclusion
 
 Le projet peut être repris et évoluer sans régression pour son code serveur : ses règles sont
-vérifiées par 300 tests, ses frontières par dependency-cruiser et trois fonctions d'aptitude,
+vérifiées par 321 tests, ses frontières par dependency-cruiser et trois fonctions d'aptitude,
 et chaque construction de production exécute ces vérifications. Ses décisions sont consignées
-dans douze ADR, dont la plupart ont été éprouvées par une évolution ultérieure. L'extraction du
-Village, puis l'ajout de la Forge et du Tournoi sans modification du Village (hors une constante
-de ses contrats), ont démontré que ses frontières entre modules sont réelles. Trois conditions demeurent :
+dans treize ADR, dont la plupart ont été éprouvées par une évolution ultérieure. L'extraction du
+Village, puis l'ajout de la Forge, du Tournoi et des Quêtes sans modification du Village (hors une
+constante de ses contrats), ni de la Taverne (hors une fonction de lecture), ont démontré que ses frontières entre modules sont réelles. Trois conditions demeurent :
 ajouter un test automatique de l'interface avant toute évolution importante de celle-ci,
 rembourser les dettes DT-008 et DT-009 avant d'ouvrir le jeu au public, et mesurer la charge
 des flux temps réel avant d'augmenter sensiblement le nombre de joueurs.

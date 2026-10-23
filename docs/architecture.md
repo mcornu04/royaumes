@@ -12,7 +12,7 @@ dans le même commit que la modification qu'ils décrivent.
 ```mermaid
 flowchart TB
   joueur["Joueur<br/>[Personne]<br/>Joue depuis un navigateur,<br/>sur ordinateur ou sur téléphone"]
-  royaumes["Royaumes<br/>[Système logiciel]<br/>Jeu web multijoueur : village, donjon,<br/>classement, marché, taverne,<br/>forge et tournoi"]
+  royaumes["Royaumes<br/>[Système logiciel]<br/>Jeu web multijoueur : village, donjon,<br/>classement, marché, taverne,<br/>forge, tournoi et quêtes"]
   joueur -->|"Gère son village, joue avec les autres joueurs,<br/>reçoit les changements en direct (HTTPS)"| royaumes
 ```
 
@@ -28,7 +28,7 @@ flowchart TB
   subgraph royaumes["Système Royaumes"]
     web["Interface web<br/>[Conteneur : React, dans le navigateur]<br/>Pages du jeu et page de connexion"]
     serveur["Application serveur<br/>[Conteneur : Next.js et Hono, fonctions Vercel, Francfort]<br/>Rendu des pages, API JSON,<br/>authentification, flux temps réel"]
-    base[("Base de données<br/>[Conteneur : PostgreSQL, Neon, Francfort]<br/>Schéma platform : journal, points de reprise,<br/>boîte d'envoi, registre des effacements<br/>Schéma identity : comptes et sessions<br/>Schémas ranking, dungeon, market et tournament :<br/>modèles de lecture<br/>Schéma tavern : messages et présence")]
+    base[("Base de données<br/>[Conteneur : PostgreSQL, Neon, Francfort]<br/>Schéma platform : journal, points de reprise,<br/>boîte d'envoi, registre des effacements<br/>Schéma identity : comptes et sessions<br/>Schémas ranking, dungeon, market, tournament<br/>et quests : modèles de lecture<br/>Schéma tavern : messages et présence")]
   end
   joueur -->|"Utilise"| web
   web -->|"Pages, appels de l'API avec le cookie de session<br/>(HTTPS, JSON)"| serveur
@@ -42,9 +42,9 @@ flowchart TB
 | Application serveur | Next.js, Hono, Better Auth, Drizzle | Contrôle d'accès, règles du jeu, enregistrement des événements, diffusion des flux |
 | Base de données | PostgreSQL (Neon en production, PGlite en local et en test) | Conservation du journal d'événements, des comptes et des sessions ; modèles de lecture des modules |
 
-Le journal d'événements est la seule source de vérité des modules Village, Donjon, Marché, Forge et Tournoi.
+Le journal d'événements est la seule source de vérité des modules Village, Donjon, Marché, Forge, Tournoi et Quêtes.
 La Taverne n'enregistre pas d'événements : ses tables sont sa propre source de vérité (ADR 0008).
-Les tables des schémas `ranking`, `dungeon`, `market` et `tournament` sont des modèles de lecture, dérivés du journal par des projections : elles peuvent
+Les tables des schémas `ranking`, `dungeon`, `market`, `tournament` et `quests` sont des modèles de lecture, dérivés du journal par des projections : elles peuvent
 être vidées puis reconstruites à tout moment, sans perte d'information.
 
 L'interface web ne communique jamais directement avec la base : toute lecture et toute
@@ -69,6 +69,7 @@ flowchart TB
     tavern["tavern<br/>Taverne : messages et présence<br/>en tables, API, canal à source propre"]
     forge["forge<br/>Forge : domaine, orchestrateur<br/>de la saga de paiement, API, canal"]
     tournament["tournament<br/>Tournoi : domaine et combats,<br/>projection des profils, API, canal global"]
+    quests["quests<br/>Quêtes du jour : domaine et tirage,<br/>projection de l'activité, API, canal global"]
   end
   subgraph platform["src/platform"]
     auth["auth<br/>Port AuthPort,<br/>adaptateur Better Auth"]
@@ -85,7 +86,7 @@ flowchart TB
   route --> server
   pages --> server
   server --> createapi
-  createapi --> system & realm & dungeon & ranking & market & tavern & forge & tournament & auth & http & realtime & projection & outbox & privacy & cron
+  createapi --> system & realm & dungeon & ranking & market & tavern & forge & tournament & quests & auth & http & realtime & projection & outbox & privacy & cron
   realm --> store & realtime & http & outbox
   market --> store & projection & realtime & http & outbox
   dungeon --> store & projection & realtime & http
@@ -93,7 +94,9 @@ flowchart TB
   tavern --> realtime & http & db
   forge --> store & realtime & http & outbox
   tournament --> store & projection & realtime & http & outbox
-  realm & dungeon & market & ranking & tavern & forge & tournament --> privacy
+  quests --> store & projection & realtime & http & outbox
+  quests -.->|"activité de la Taverne<br/>(port injecté)"| tavern
+  realm & dungeon & market & ranking & tavern & forge & tournament & quests --> privacy
   privacy --> store
   auth --> privacy
   realtime --> store & http
@@ -131,6 +134,13 @@ et de la Forge (`ItemCollected`) dans une projection, qui tient le profil de com
 chaque joueur ; il verse ses récompenses par la boîte d'envoi (`realm.deposit`). Le module
 `ranking` lit à son tour l'événement `PrizesAwarded` du Tournoi, pour compter les tournois
 remportés (ADR 0012).
+
+Le module `quests` lit l'activité de cinq modules dans leur langage publié (`BuildingUpgraded`,
+`ItemCollected`, `GameEnded`, `TournamentOpened`, `EntrantJoined`, `PrizesAwarded`,
+`OfferPublished`), par une projection qui la compte jour par jour. La Taverne, qui n'enregistre
+pas d'événements, lui fournit le nombre de messages d'un joueur par une fonction de son point
+d'entrée, que la racine de composition lui transmet ; c'est la flèche en pointillés. Les
+récompenses sont versées au Village par la boîte d'envoi (ADR 0013).
 
 Chaque module déclare ses données personnelles à la brique `privacy`, au moyen d'un fichier
 `personal-data.ts` : il les exporte, désigne les champs personnels de ses événements, et les
@@ -209,6 +219,35 @@ sequenceDiagram
   T->>J1: PrizesAwarded + message realm.deposit (champion, finaliste)
   J1->>V: realm.deposit (tournament:id:champion)
   C->>J1: lit PrizesAwarded (projection du Classement, version 3)
+```
+
+## Les Quêtes du jour
+
+Le tableau des quêtes est affiché à droite de chaque écran du jeu : la mise en page du groupe
+`app/(jeu)` le fournit au cadre `AppShell`, qui n'importe aucun module. Le parcours suivant
+présente une quête accomplie à la Forge, puis la récupération de sa récompense.
+
+```mermaid
+sequenceDiagram
+  actor J as Joueur
+  participant F as Forge
+  participant J1 as Journal et boîte d'envoi
+  participant Q as Quêtes (tableau et API)
+  participant P as Projection des Quêtes
+  participant T as Taverne
+  participant V as Village
+  J->>F: POST /api/forge/orders/current/collect
+  F->>J1: ItemCollected
+  J1-->>Q: canal quests : ItemCollected annoncé, sans données
+  Q->>P: rattrapage, puis activité du jour du joueur
+  P->>J1: lit ItemCollected
+  Q->>T: messagesSince(joueur, minuit)
+  Q-->>J: tableau : quête « Forger une pièce » cochée
+  J->>Q: POST /api/quests/quests/forge-1/claim
+  Q->>J1: QuestRewardClaimed + message realm.deposit (une transaction)
+  J1->>V: realm.deposit (quest:jour:forge-1:joueur)
+  V->>J1: ResourcesDeposited
+  Q-->>J: 200, l'or s'envole vers le Village
 ```
 
 ## Extraction du Village
