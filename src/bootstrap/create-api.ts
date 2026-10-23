@@ -6,6 +6,7 @@ import { createRankingModule } from '@/modules/ranking'
 import { createRealmModule, createRemoteRealmModule } from '@/modules/realm'
 import { createSystemModule } from '@/modules/system'
 import { createTavernModule } from '@/modules/tavern'
+import { createTournamentModule } from '@/modules/tournament'
 import { createIdentityPersonalData } from '@/platform/auth/personal-data'
 import type { AuthPort } from '@/platform/auth/port'
 import { createCronApi } from '@/platform/cron/cron-api'
@@ -90,6 +91,15 @@ export function createApi({
   // La Forge paie ses commandes par une saga avec le Village : elle déclenche, comme le
   // Marché, la distribution après ses commandes et ses consultations.
   const forge = createForgeModule({ store, dispatch: () => dispatcher.dispatch(), clock })
+  // Le Tournoi lit les événements du Village et de la Forge, et verse ses récompenses
+  // par la boîte d'envoi, distribuée après ses commandes et ses consultations.
+  const tournament = createTournamentModule({
+    store,
+    db,
+    projections,
+    dispatch: () => dispatcher.dispatch(),
+    clock,
+  })
 
   // Droits des joueurs : chaque module fournit ses données personnelles. L'identité vient
   // en dernier : tant qu'elle n'est pas effacée, le joueur peut relancer un effacement interrompu.
@@ -102,6 +112,7 @@ export function createApi({
       ranking.personalData,
       tavern.personalData,
       forge.personalData,
+      tournament.personalData,
       createIdentityPersonalData(db),
     ],
     clock,
@@ -111,6 +122,7 @@ export function createApi({
   dispatcher.register(realm.handlers)
   dispatcher.register(market.handlers)
   dispatcher.register(forge.handlers)
+  dispatcher.register(tournament.handlers)
 
   // Règles d'accès aux canaux temps réel, déclarées par les modules.
   const policies: ChannelPolicy[] = [
@@ -120,6 +132,7 @@ export function createApi({
     market.channelPolicy,
     tavern.channelPolicy,
     forge.channelPolicy,
+    tournament.channelPolicy,
   ]
 
   // 2. Application principale : toutes ses routes sont préfixées par /api.
@@ -187,6 +200,7 @@ export function createApi({
   app.use('/market/*', requireUser(auth))
   app.use('/tavern/*', requireUser(auth))
   app.use('/forge/*', requireUser(auth))
+  app.use('/tournament/*', requireUser(auth))
   app.use('/account', requireUser(auth))
   app.use('/account/*', requireUser(auth))
   app.use('/stream/*', requireUser(auth))
@@ -201,6 +215,7 @@ export function createApi({
     .route('/market', market.api)
     .route('/tavern', tavern.api)
     .route('/forge', forge.api)
+    .route('/tournament', tournament.api)
     .route('/account', createPrivacyApi(privacy))
     .route('/stream', createRealtimeApi({ store, policies, ...realtime }))
 }
