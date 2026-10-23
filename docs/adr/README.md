@@ -18,3 +18,4 @@ un nouvel ADR est rédigé et l'ancien prend le statut « remplacé ».
 | [0010](0010-forge-journal-evenements.md) | Atelier de la Forge dans le journal d'événements, durée de forge à échéance paresseuse | Accepté |
 | [0011](0011-forge-saga-village.md) | Paiement des commandes de la Forge par une saga avec le Village, compensée à l'annulation | Accepté |
 | [0012](0012-tournoi-langage-publie.md) | Tournoi alimenté par le langage publié du Village et de la Forge, combats déduits d'une graine | Accepté |
+| [0013](0013-quetes-activite-des-modules.md) | Quêtes du jour alimentées par l'activité des autres modules, Taverne lue par son point d'entrée | Accepté |
