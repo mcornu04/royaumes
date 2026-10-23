@@ -14,6 +14,12 @@ export const ROUND_MS = 30_000
 export const ROUNDS = 3
 
 /**
+ * Durée pendant laquelle un tournoi terminé reste dans le modèle de lecture, avant d'en être
+ * retiré par la tâche quotidienne. Ses événements, eux, restent dans le journal.
+ */
+export const FINISHED_RETENTION_MS = 24 * 60 * 60_000
+
+/**
  * Conditions d'entrée : chaque bâtiment du village au moins à ce niveau, et au moins ce nombre
  * de pièces forgées, soit le rang de compagnon de la Forge. La correspondance avec le rang de la
  * Forge est vérifiée par un test de l'application, le domaine n'important aucun autre module.

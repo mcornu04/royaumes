@@ -11,7 +11,7 @@ import {
   type TournamentView,
 } from '@/modules/tournament/contracts'
 import { createEventStore, type NewEvent } from '@/platform/event-store/event-store'
-import { createTestApi } from './testing'
+import { createTestApi, TEST_CRON_SECRET } from './testing'
 
 type TestApi = Awaited<ReturnType<typeof createTestApi>>
 
@@ -231,10 +231,67 @@ describe('API du module Tournoi', () => {
     expect(await prizeDeposits(api)).toMatchObject(expected)
   })
 
-  it('annonce les tournois sur le canal global du Tournoi', async () => {
+  it('retire de la liste un tournoi terminé, puis de la table par la tâche quotidienne', async () => {
+    const { api, tournamentId } = await tournamentWithTwoPlayers()
+    await api.post(`/api/tournament/tournaments/${tournamentId}/start`, {}, 'alice')
+    const listed = async () =>
+      ((await (await api.get('/api/tournament/tournaments')).json()) as TournamentList).tournaments
+    const rows = async () =>
+      (
+        (await api.db.execute(
+          sql`SELECT tournament_id FROM tournament.tournaments`,
+        )) as unknown as {
+          rows: unknown[]
+        }
+      ).rows.length
+    const daily = async () =>
+      (
+        await (
+          await api.api.request('/api/cron/daily', {
+            headers: { authorization: `Bearer ${TEST_CRON_SECRET}` },
+          })
+        ).json()
+      ).tournament
+
+    // En cours : le tournoi est présenté.
+    expect(await listed()).toMatchObject([{ tournamentId, status: 'started' }])
+
+    // Terminé : il sort de la liste, mais reste consultable par son adresse.
+    api.advance(3 * ROUND_MINUTES)
+    expect(await listed()).toEqual([])
+    expect((await viewOf(api, tournamentId)).status).toBe('finished')
+
+    // La tâche quotidienne ne le retire de la table qu'au-delà de vingt-quatre heures.
+    expect(await daily()).toEqual({ ok: true, result: { tournaments: 0 } })
+    expect(await rows()).toBe(1)
+    api.advance(24 * 60)
+    expect(await daily()).toEqual({ ok: true, result: { tournaments: 0 } })
+    api.advance(1)
+    expect(await daily()).toEqual({ ok: true, result: { tournaments: 1 } })
+    expect(await rows()).toBe(0)
+  })
+
+  it('annonce les tournois sur le canal global du Tournoi, sans aucune de leurs données', async () => {
     const { api } = await tournamentWithTwoPlayers()
     const res = await api.get('/api/stream/tournaments/events?after=0', 'carol')
     expect(res.status).toBe(200)
+    const { events } = (await res.json()) as { events: { type: string; data: unknown }[] }
+    expect(events.map((e) => e.type)).toEqual(['TournamentOpened', 'EntrantJoined'])
+    for (const event of events) expect(event.data).toEqual({})
+  })
+
+  it("ignore un identifiant de joueur glissé dans le corps : l'hôte est le joueur connecté", async () => {
+    const api = await createTestApi()
+    await prepare(api, 'alice')
+    const res = await api.post(
+      '/api/tournament/tournaments',
+      { tactic: 'balanced', playerId: 'bob' },
+      'alice',
+    )
+    expect(res.status).toBe(201)
+    const { view } = (await res.json()) as { view: TournamentView }
+    expect(view).toMatchObject({ hostName: 'alice', isHost: true })
+    expect(view.entrants.map((e) => e.name)).toEqual(['alice'])
   })
 
   it('exporte les inscriptions du joueur, puis efface son nom et son profil', async () => {

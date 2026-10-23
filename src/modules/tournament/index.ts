@@ -54,6 +54,8 @@ export function createTournamentModule({
     api: createTournamentApi(service),
     channelPolicy,
     handlers: createTournamentHandlers(service),
+    // Tâche quotidienne : retrait des tournois terminés du modèle de lecture.
+    dailyTask: service.purge,
     personalData: createTournamentPersonalData(store, db),
   }
 }

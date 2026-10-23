@@ -2,7 +2,7 @@ import { REALM_TOPICS } from '@/modules/realm/contracts'
 import { withOptimisticRetry } from '@/platform/event-store/retry'
 import type { NewMessage } from '@/platform/outbox/outbox'
 import { type Eligibility, TOURNAMENT_TOPICS } from '../contracts'
-import type { Tactic } from '../domain/catalog'
+import { FINISHED_RETENTION_MS, ROUND_MS, ROUNDS, type Tactic } from '../domain/catalog'
 import { type ChampionProfile, statsOf } from '../domain/combat'
 import { requestsFor, type TournamentRequest } from '../domain/saga'
 import {
@@ -168,8 +168,17 @@ export function createTournamentService(
   const start = (tournamentId: string, playerId: string) =>
     execute(tournamentId, playerId, { type: 'StartTournament', playerId, seed: newSeed() })
 
-  /** Tournois les plus récents. */
-  const list = () => reader.list()
+  /** Tournois ouverts ou en cours. */
+  const list = () => reader.list(clock())
+
+  /**
+   * Tâche quotidienne : retire du modèle de lecture les tournois terminés depuis plus de
+   * vingt-quatre heures, afin que sa table ne grandisse pas sans limite.
+   */
+  async function purge() {
+    const before = clock() - ROUNDS * ROUND_MS - FINISHED_RETENTION_MS
+    return { tournaments: await reader.purgeStartedBefore(before) }
+  }
 
   /**
    * Étape déclenchée par un message : une erreur métier y est levée, et le message retenté.
@@ -180,7 +189,7 @@ export function createTournamentService(
     if (!decision.ok) throw new Error(`Tournoi ${tournamentId} : ${decision.error.code}`)
   }
 
-  return { eligibility, open, join, start, getView, list, step }
+  return { eligibility, open, join, start, getView, list, purge, step }
 }
 
 /** Type du service, déduit de sa fabrique. */

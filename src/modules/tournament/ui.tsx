@@ -624,7 +624,7 @@ export function TournamentScreen() {
                     <span className="muted">
                       {t.status === 'open'
                         ? `· inscriptions ouvertes (${t.entrants} / ${SEATS})`
-                        : '· lancé'}
+                        : '· en cours'}
                     </span>
                   </span>
                   <button type="button" onClick={() => setSelected(t.tournamentId)}>

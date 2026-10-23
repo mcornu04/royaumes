@@ -1,9 +1,9 @@
-import { desc, eq } from 'drizzle-orm'
+import { and, desc, eq, gt, lt, or } from 'drizzle-orm'
 import type { Db } from '@/platform/db/client'
 import type { EventStore, NewEvent } from '@/platform/event-store/event-store'
 import type { ProjectionRunner } from '@/platform/projection/projection'
 import type { TournamentReader, TournamentRepository } from '../application/ports'
-import { type TournamentSummary, tournamentStream } from '../contracts'
+import { ROUND_MS, ROUNDS, type TournamentSummary, tournamentStream } from '../contracts'
 import { replay, type TournamentEvent } from '../domain/tournament'
 import { champions, tournaments } from './schema'
 import { tournamentProjection } from './tournament-projection'
@@ -48,13 +48,24 @@ export function createDrizzleTournamentReader(
       }
     },
 
-    async list() {
+    async list(now) {
       await projections.catchUp(tournamentProjection)
       // Comme au TD8 : la position est lue avant la table, qui reflète au moins cette position.
       const position = await projections.positionOf(tournamentProjection.name)
+      // Seuls les tournois ouverts, et ceux dont le dernier tour n'est pas encore terminé, sont
+      // présentés : un tournoi terminé sort de la liste dès sa finale.
       const rows = await db
         .select()
         .from(tournaments)
+        .where(
+          or(
+            eq(tournaments.status, 'open'),
+            and(
+              eq(tournaments.status, 'started'),
+              gt(tournaments.startedAt, now - ROUNDS * ROUND_MS),
+            ),
+          ),
+        )
         .orderBy(desc(tournaments.openedAt))
         .limit(LIST_SIZE)
       return {
@@ -70,6 +81,16 @@ export function createDrizzleTournamentReader(
           }),
         ),
       }
+    },
+
+    async purgeStartedBefore(instant) {
+      // Une reconstruction de la projection rétablirait ces lignes à partir du journal ; la
+      // tâche quotidienne suivante les retirerait de nouveau.
+      const removed = await db
+        .delete(tournaments)
+        .where(and(eq(tournaments.status, 'started'), lt(tournaments.startedAt, instant)))
+        .returning({ tournamentId: tournaments.tournamentId })
+      return removed.length
     },
   }
 }

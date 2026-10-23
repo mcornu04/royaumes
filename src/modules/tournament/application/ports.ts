@@ -23,6 +23,11 @@ export interface TournamentRepository {
 export interface TournamentReader {
   /** Profil de combattant d'un joueur ; null s'il n'a ni bâtiment amélioré ni pièce forgée. */
   profileOf(playerId: string): Promise<ChampionProfile | null>
-  /** Tournois les plus récents. */
-  list(): Promise<TournamentList>
+  /** Tournois ouverts ou en cours à cet instant ; un tournoi terminé n'y figure plus. */
+  list(now: number): Promise<TournamentList>
+  /**
+   * Retire du modèle de lecture les tournois lancés avant cet instant, et renvoie leur nombre.
+   * Les événements des tournois restent dans le journal, qui demeure la source de vérité.
+   */
+  purgeStartedBefore(instant: number): Promise<number>
 }

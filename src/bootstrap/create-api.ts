@@ -181,6 +181,8 @@ export function createApi({
         // DETTE TECHNIQUE DT-008 (docs/qualite/dette-technique.md) : les sessions expirées ne sont
         // supprimées par aucune tâche, et conservent leur adresse IP jusqu'à la suppression du compte.
         tavern: tavern.dailyTask,
+        // Retrait des tournois terminés de la liste des tournois.
+        tournament: tournament.dailyTask,
         // Relais du flux publié par le Village extrait, s'il y en a un.
         ...(remoteRealm ? { realm: remoteRealm.dailyTask } : {}),
       },
