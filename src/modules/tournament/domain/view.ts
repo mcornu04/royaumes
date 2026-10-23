@@ -78,6 +78,8 @@ export function toView(
   }
 
   const round = Math.min(ROUNDS, Math.floor((now - state.startedAt) / ROUND_MS))
+  // DETTE TECHNIQUE (docs/qualite/dette-technique.md, Tournoi) : le tableau complet, sept duels,
+  // est recalculé à chaque lecture de la vue, au lieu d'être enregistré une fois au lancement.
   const bracket = bracketOf(fightersOf(state), state.seed)
   const rounds = bracket
     .slice(0, Math.min(round + 1, ROUNDS))

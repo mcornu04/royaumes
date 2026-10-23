@@ -117,6 +117,8 @@ export function createForgeService(
    * reprend dès que le joueur consulte sa forge.
    */
   async function getView(playerId: string) {
+    // DETTE TECHNIQUE (docs/qualite/dette-technique.md, Forge) : chaque consultation distribue
+    // toute la boîte d'envoi, y compris les messages des autres modules et des autres joueurs.
     await dispatch()
     return viewOf(playerId)
   }

@@ -227,6 +227,8 @@ export function decide(state: TournamentState, command: TournamentCommand, now: 
     case 'JoinTournament': {
       const { applicant } = command
       // Règle 2 : on ne rejoint qu'un tournoi ouvert, une seule fois, dans la limite des places.
+      // DETTE TECHNIQUE (docs/qualite/dette-technique.md, Tournoi) : un joueur peut être inscrit
+      // à plusieurs tournois en même temps, chaque tournoi ne connaissant que son propre flux.
       if (state.status !== 'open') return fail({ code: 'NOT_OPEN' })
       if (state.entrants.some((e) => e.playerId === applicant.playerId)) {
         return fail({ code: 'ALREADY_JOINED' })

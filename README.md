@@ -66,6 +66,7 @@ docs/
   adr/                Décisions d'architecture
   qualite/            Dette technique et revues
   rgpd/               Registre des traitements et revue de conformité
+  evaluation/         Document de rendu de l'évaluation
   architecture.md     Description de l'architecture (modèle C4)
   bilan-technique.md  Bilan technique du projet
 ```
@@ -78,26 +79,29 @@ Un module n'est accessible depuis l'extérieur que par ses entrées publiques : 
 | `system` | Route de santé | `/api/system` |
 | `realm` | Village : fondation, production de ressources, amélioration des bâtiments | `/api/realm` |
 | `dungeon` | Donjon : expéditions de un à quatre héros, compagnons pilotés par l'ordinateur, deux niveaux de difficulté, combats en manches simultanées | `/api/dungeon` |
-| `ranking` | Classement des joueurs, construit à partir des événements du Village et du Donjon | `/api/ranking` |
+| `ranking` | Classement des joueurs, construit à partir des événements du Village, du Donjon et du Tournoi | `/api/ranking` |
 | `market` | Marché : échanges de ressources entre joueurs, par une saga orchestrée | `/api/market` |
 | `tavern` | Taverne : salon de discussion commun et présence des joueurs, sans Event Sourcing | `/api/tavern` |
+| `forge` | Forge : commande de pièces payées en ressources du village par une saga, durée de forge, armurerie et rang du forgeron | `/api/forge` |
+| `tournament` | Tournoi : tournois à élimination directe entre joueurs et chevaliers pilotés par l'ordinateur, combats déduits d'une graine, récompenses en or | `/api/tournament` |
 
 ## Temps réel
 
 Les changements sont diffusés aux navigateurs par des Server-Sent Events, à l'adresse
 `/api/stream/<canal>`. Chaque canal n'est accessible qu'aux joueurs connectés autorisés par
 la règle du module concerné. Le canal `village-<joueur>` n'est ainsi accessible qu'au
-propriétaire du village, et le canal `dungeon-<expédition>` aux seuls membres de l'expédition.
+propriétaire du village, le canal `forge-<joueur>` au seul propriétaire de l'atelier, et le canal
+`dungeon-<expédition>` aux seuls membres de l'expédition.
 
-La plupart des canaux correspondent à un flux du journal d'événements. Les canaux `ranking`
-et `market` sont des canaux globaux : ils suivent, dans tout le journal, les événements qui
+La plupart des canaux correspondent à un flux du journal d'événements. Les canaux `ranking`,
+`market` et `tournaments` sont des canaux globaux : ils suivent, dans tout le journal, les événements qui
 modifient le classement ou la liste des offres, et ne transmettent que ceux qui sont
 enregistrés après leur ouverture.
 
 Le canal `tavern` ne lit pas le journal, mais la table des messages de la Taverne : il
 transmet chaque nouveau message, avec son contenu, à tous les joueurs connectés.
 
-Les canaux du Donjon, du Classement et du Marché sont discrets : ils ne transmettent que la position,
+Les canaux du Donjon, du Classement, du Marché et du Tournoi sont discrets : ils ne transmettent que la position,
 le type et la version des événements, et chaque navigateur relit sa propre vue, filtrée
 par le serveur.
 
@@ -115,6 +119,11 @@ chaque consultation du Marché, et chaque jour par la tâche planifiée `/api/cr
 est garantie au moins une fois : les gestionnaires de messages sont idempotents. Un message qui
 échoue dix fois est abandonné : la tâche quotidienne le signale, et le script
 `scripts/dead-letters.ts` permet de l'examiner, puis de le relancer une fois sa cause corrigée.
+
+La Forge paie ses commandes par la même saga avec le Village : prélèvement du coût à la commande,
+remboursement intégral à l'annulation (ADR 0011). Le Tournoi lit les événements du Village et de
+la Forge pour établir le profil des combattants, et verse ses récompenses au village des joueurs
+par la boîte d'envoi ; le Classement compte les tournois remportés (ADR 0012).
 
 ## Service Village extrait
 
@@ -141,9 +150,14 @@ page « Mes données » :
   tous les modules, et son nom est remplacé par une mention neutre dans le journal
   d'événements (ADR 0008). Chaque effacement est consigné dans `platform.erasures`.
 
+La Forge et le Tournoi copient le nom du joueur dans leurs événements : le poinçon gravé sur
+chaque pièce, et le nom des inscrits d'un tournoi. Ces noms sont remplacés lors de l'effacement,
+et le profil de combattant du Tournoi est supprimé.
+
 Les messages de la Taverne sont conservés trente jours, et la présence d'un joueur deux
 minutes après son dernier signal. Ces durées sont appliquées à chaque lecture, et chaque jour
-par la tâche planifiée `/api/cron/daily`.
+par la tâche planifiée `/api/cron/daily`, qui retire aussi de la liste des tournois ceux qui
+sont terminés depuis plus de vingt-quatre heures.
 
 ## Base de données
 
@@ -153,7 +167,8 @@ démarrage. Pour repartir d'une base vide, arrêtez le serveur et supprimez le r
 
 Les tests utilisent une base PGlite en mémoire, recréée pour chaque fichier de test.
 
-Le classement et la liste des expéditions ouvertes sont des modèles de lecture, tenus à jour
+Le classement, la liste des expéditions ouvertes, les offres du Marché, les profils de
+combattants et la liste des tournois sont des modèles de lecture, tenus à jour
 par des projections à partir du journal d'événements (ADR 0006). Chaque projection est
 rattrapée à la consultation, et reconstruite automatiquement lorsque sa version change :
 une modification qui change le contenu de ses tables doit donc augmenter sa version.
@@ -188,9 +203,12 @@ sans la première ; sans la seconde, la route des tâches quotidiennes reste fer
 - [Revue de sécurité de l'authentification](docs/qualite/revue-securite-authentification.md)
 - [Revue de sécurité du Donjon](docs/qualite/revue-securite-donjon.md)
 - [Revue de sécurité du Marché](docs/qualite/revue-securite-marche.md)
+- [Revue de sécurité de la Forge](docs/qualite/revue-securite-forge.md)
+- [Revue de sécurité du Tournoi](docs/qualite/revue-securite-tournoi.md)
 - [Registre des traitements](docs/rgpd/registre-traitements.md)
 - [Revue de conformité au RGPD](docs/rgpd/revue-conformite.md)
 - [Bilan technique](docs/bilan-technique.md)
+- [Rendu de l'évaluation](docs/evaluation/rendu.md)
 
 ## Conventions
 
@@ -220,6 +238,18 @@ quotidienne.
 L'effacement d'un compte parcourt tout le journal d'événements : sa durée croît avec la taille
 du journal. L'identifiant d'un joueur effacé reste dans le journal, sous une forme
 pseudonymisée : plus aucune table ne le relie à une personne (ADR 0008).
+
+Une pièce de la Forge n'entre dans l'armurerie qu'une fois récupérée par le joueur : une pièce
+prête mais oubliée ne compte ni pour le rang, ni pour le Tournoi. Chaque consultation de la
+Forge distribue toute la boîte d'envoi.
+
+Les tours d'un tournoi se dévoilent toutes les trente secondes, sans tâche de fond : le tableau
+est recalculé à chaque lecture, à partir de la graine enregistrée au lancement. Un joueur peut
+être inscrit à plusieurs tournois à la fois, et un
+joueur au village et à l'armurerie très avancés remporte presque tous les tournois, les
+chevaliers de l'ordinateur ayant des caractéristiques fixes. Les coups d'un duel sont transmis
+au début de son tour, pour que l'arène les rejoue : l'issue est donc lisible dans la réponse de
+l'API jusqu'à trente secondes à l'avance (risque accepté, revue du Tournoi).
 
 Le service Village extrait n'est pas prêt pour la production : ses migrations, la pagination
 de son flux publié et la distribution de sa boîte d'envoi restent à traiter. Ces limites, et
