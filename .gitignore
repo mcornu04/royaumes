@@ -39,6 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# Consignes destinées aux assistants de code, régénérées par next dev à chaque démarrage.
+AGENTS.md
 
 # Données locales de développement (base PGlite)
 .data
