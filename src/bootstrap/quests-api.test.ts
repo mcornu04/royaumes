@@ -192,6 +192,17 @@ describe('API du module Quêtes', () => {
     if (lost) expect((await claim(api, lost.id)).status).toBe(404)
   })
 
+  it('annonce sur le canal global des Quêtes les actions des autres modules, sans leurs données', async () => {
+    const api = await questsWithVillage()
+    const board = await boardOf(api)
+    await perform(api, 'alice', 'forge', board.asOf)
+    const res = await api.get('/api/stream/quests/events?after=0', 'bob')
+    expect(res.status).toBe(200)
+    const { events } = (await res.json()) as { events: { type: string; data: unknown }[] }
+    expect(events.map((e) => e.type)).toEqual(['VillageFounded', 'ItemCollected'])
+    for (const event of events) expect(event.data).toEqual({})
+  })
+
   it("exporte l'activité et les récompenses du joueur, puis les efface avec son compte", async () => {
     const api = await questsWithVillage()
     const board = await completeAll(api)

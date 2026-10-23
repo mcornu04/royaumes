@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import type { ReactNode } from 'react'
+import { type ReactNode, useEffect, useRef } from 'react'
 import { authClient } from '@/platform/auth/client'
 import { Entity } from './entity'
 
@@ -14,11 +14,29 @@ export const NAV = [
   { href: '/tavern', kind: 'tavern', label: 'Taverne' },
   { href: '/forge', kind: 'forge', label: 'Forge' },
   { href: '/tournament', kind: 'tournament', label: 'Tournoi' },
+  { href: '/quests', kind: 'quests', label: 'Quêtes' },
 ]
 
-/** Cadre de l'espace de jeu : navigation, nom du joueur, accès à ses données et déconnexion. */
-export function AppShell({ userName, children }: { userName: string; children: ReactNode }) {
+/**
+ * Cadre de l'espace de jeu : navigation, nom du joueur, accès à ses données et déconnexion.
+ * Le contenu de la colonne de droite (aside), s'il y en a un, est fourni par la page.
+ */
+export function AppShell({
+  userName,
+  aside,
+  children,
+}: {
+  userName: string
+  aside?: ReactNode
+  children: ReactNode
+}) {
   const pathname = usePathname()
+  // Menu du compte : il se referme à chaque changement de page.
+  const accountMenu = useRef<HTMLDetailsElement>(null)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: le changement de page est le déclencheur
+  useEffect(() => {
+    if (accountMenu.current) accountMenu.current.open = false
+  }, [pathname])
 
   async function signOut() {
     // La session est supprimée côté serveur, puis la page est entièrement rechargée,
@@ -39,17 +57,24 @@ export function AppShell({ userName, children }: { userName: string; children: R
             <Entity kind={item.kind} /> {item.label}
           </Link>
         ))}
-        <span className="muted" style={{ marginLeft: 'auto' }}>
-          {userName}
-        </span>
-        <Link href="/account" aria-current={pathname === '/account' ? 'page' : undefined}>
-          Mes données
-        </Link>
-        <button className="link" type="button" onClick={signOut}>
-          Déconnexion
-        </button>
+        <details className="account-menu" ref={accountMenu}>
+          <summary aria-label={`Compte de ${userName}`}>
+            <span aria-hidden="true">👤</span> {userName}
+          </summary>
+          <div className="account-items">
+            <Link href="/account" aria-current={pathname === '/account' ? 'page' : undefined}>
+              Mes données
+            </Link>
+            <button className="link" type="button" onClick={signOut}>
+              Déconnexion
+            </button>
+          </div>
+        </details>
       </nav>
-      {children}
+      <div className="game-layout">
+        <div className="game-main">{children}</div>
+        {aside && <aside className="game-aside">{aside}</aside>}
+      </div>
     </>
   )
 }

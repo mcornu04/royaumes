@@ -2,6 +2,7 @@ import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { currentUser } from '@/bootstrap/server'
+import { QuestAside } from '@/modules/quests/ui'
 import { AppShell } from '@/ui/app-shell'
 
 // La mise en page dépend de la session : elle est rendue à chaque requête, jamais à l'avance.
@@ -15,5 +16,10 @@ export const dynamic = 'force-dynamic'
 export default async function GameLayout({ children }: { children: ReactNode }) {
   const user = await currentUser(await headers())
   if (!user) redirect('/login')
-  return <AppShell userName={user.name}>{children}</AppShell>
+  // Le tableau des quêtes du jour est affiché à droite de chaque écran du jeu.
+  return (
+    <AppShell userName={user.name} aside={<QuestAside />}>
+      {children}
+    </AppShell>
+  )
 }

@@ -13,6 +13,12 @@ export { CHEST_REWARD, DAY_MS, QUESTS } from './domain/catalog'
 export type { QuestError } from './domain/quests'
 export type { QuestBoardView } from './domain/view'
 
+/**
+ * Nom du canal temps réel global des Quêtes : il annonce, sans leurs données, les événements
+ * qui peuvent faire avancer une quête ; chaque joueur relit alors son propre tableau.
+ */
+export const QUESTS_CHANNEL = 'quests'
+
 /** Préfixe commun aux noms des flux de tous les carnets de quêtes. */
 export const QUEST_STREAM_PREFIX = 'quests-'
 

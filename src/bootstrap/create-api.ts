@@ -145,6 +145,7 @@ export function createApi({
     tavern.channelPolicy,
     forge.channelPolicy,
     tournament.channelPolicy,
+    quests.channelPolicy,
   ]
 
   // 2. Application principale : toutes ses routes sont préfixées par /api.

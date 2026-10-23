@@ -38,6 +38,7 @@ export const theme: Record<string, Look> = {
   kingsblade: { glyph: '🗡️', label: 'Lame du Roi' },
   tournament: { glyph: '🏟️', label: 'Tournoi' },
   knight: { glyph: '🏇', label: "Chevalier de l'ordinateur" },
+  quests: { glyph: '📜', label: 'Quêtes' },
 }
 
 /** Apparence d'une entité ; une apparence neutre si l'entité n'est pas décrite. */
