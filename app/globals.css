@@ -111,7 +111,18 @@ button:disabled {
 
 /* Entités du jeu (couche de thème). */
 .entity { display: inline-flex; gap: 6px; align-items: center; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+}
 
 /* Formulaires. */
 form { display: grid; gap: 10px; max-width: 340px; }
@@ -419,3 +430,249 @@ button.glow {
   .anvil { flex-direction: column; text-align: center; }
   .power { text-align: left; }
 }
+
+/* Habillage commun à tout le jeu, dans l'esprit de la Forge : barre de métal, titres
+   dorés, cartes éclairées, halos. Il ne s'appuie que sur les classes déjà utilisées par
+   les écrans, sans modifier leur code. */
+:root {
+  --metal: linear-gradient(160deg, #3a332d 0%, #1f1a16 60%, #15110e 100%);
+  --metal-ink: #f6ead8;
+  --title-gold: #9a5f1c;
+  --button: linear-gradient(180deg, #b8742e 0%, #8a4f1a 100%);
+}
+@media (prefers-color-scheme: dark) {
+  :root { --title-gold: #e2ad5a; }
+}
+
+/* Barre de navigation : une plaque de métal sombre, le module courant éclairé par les braises. */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  gap: 6px;
+  margin: -40px -16px 24px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 0 0 var(--radius) var(--radius);
+  background: var(--metal);
+  color: var(--metal-ink);
+  box-shadow: inset 0 -1px 0 rgb(255 255 255 / 0.05), 0 8px 24px rgb(0 0 0 / 0.25);
+}
+.nav a,
+.nav button.link {
+  color: var(--metal-ink);
+  border: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: background 0.15s, box-shadow 0.15s, color 0.15s;
+}
+.nav a:hover,
+.nav button.link:hover { background: rgb(255 255 255 / 0.07); transform: none; filter: none; box-shadow: none; }
+.nav a[aria-current='page'] {
+  color: var(--ember-hot);
+  font-weight: 700;
+  background: rgb(255 138 43 / 0.12);
+  box-shadow: inset 0 -2px 0 var(--ember), 0 0 16px rgb(255 138 43 / 0.25);
+}
+.nav .muted { color: #c9b8a2; }
+
+/* Titres : lettres dorées, symbole auréolé. */
+h1 {
+  color: var(--title-gold);
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.25), 0 0 22px color-mix(in srgb, var(--title-gold) 35%, transparent);
+}
+h1 .entity { filter: drop-shadow(0 0 10px rgb(255 160 60 / 0.55)); }
+h2 {
+  margin: 0 0 14px;
+  font-family: var(--title-font);
+  font-size: 1.25rem;
+  color: var(--accent-strong);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+h2::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 45%, transparent), transparent);
+}
+
+/* Panneaux : un reflet discret en haut, comme une feuille de métal poli. */
+.panel {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 7%, transparent), transparent 40%),
+    var(--panel);
+}
+
+/* Boutons : un éclat qui traverse le bouton au survol. */
+button { position: relative; overflow: hidden; }
+button:not(.link):not(:disabled)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 30%, rgb(255 255 255 / 0.28) 50%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform 0.5s;
+  pointer-events: none;
+}
+button:not(.link):not(:disabled):hover::after { transform: translateX(120%); }
+
+/* Indicateur temps réel : une pastille lumineuse. */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+.status::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.status[data-status='open']::before { box-shadow: 0 0 8px currentColor; animation: beacon 2s ease-in-out infinite; }
+
+/* Village : chaque ressource est une gemme à sa couleur. */
+.stock div {
+  --rarity: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--rarity) 40%, transparent);
+  background: radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--rarity) 20%, transparent), transparent 70%), var(--panel);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--rarity) 18%, transparent);
+}
+.stock div:nth-child(1) { --rarity: #6f8f3a; }
+.stock div:nth-child(2) { --rarity: #8a8378; }
+.stock div:nth-child(3) { --rarity: var(--legendary); }
+.stock div .entity { filter: drop-shadow(0 0 8px color-mix(in srgb, var(--rarity) 60%, transparent)); }
+.building { border-left: 3px solid color-mix(in srgb, var(--accent) 55%, transparent); }
+.building:hover { box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 22%, transparent); }
+
+/* Donjon : héros et monstres en cartes, compte à rebours incandescent, journal en parchemin. */
+.fighter {
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel) 85%, var(--bg-deep));
+  transition: opacity 0.3s, filter 0.3s;
+}
+.heroes .fighter { border-left: 3px solid var(--rare); }
+.monsters .fighter { border-left: 3px solid #b5302a; }
+.fighter .entity { font-size: 1.3rem; }
+.fighter[data-down='true'] { filter: grayscale(1); }
+.countdown {
+  padding: 2px 10px;
+  border-radius: 999px;
+  color: var(--ember-hot);
+  background: #2a1d14;
+  box-shadow: 0 0 12px rgb(255 138 43 / 0.35);
+}
+.log li {
+  padding: 6px 12px;
+  border-left: 2px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+  border-radius: 0 8px 8px 0;
+}
+.games li {
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel) 85%, var(--bg-deep));
+}
+
+/* Classement : un podium d'or, d'argent et de bronze. */
+.ranking thead th {
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ranking tbody tr { transition: background 0.15s; }
+.ranking tbody tr:hover { background: var(--accent-soft); }
+.ranking tbody tr:nth-child(-n + 3) td:first-child { font-weight: 800; }
+.ranking tbody tr:nth-child(1) { background: linear-gradient(90deg, rgb(217 154 30 / 0.22), transparent 80%); }
+.ranking tbody tr:nth-child(2) { background: linear-gradient(90deg, rgb(160 166 176 / 0.25), transparent 80%); }
+.ranking tbody tr:nth-child(3) { background: linear-gradient(90deg, rgb(176 110 60 / 0.22), transparent 80%); }
+.ranking tbody tr:nth-child(1) td:first-child { color: var(--legendary); }
+.ranking tr[aria-current='true'] { box-shadow: inset 3px 0 0 var(--ember); }
+
+/* Marché : chaque offre est une carte de négoce. */
+.offers li {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel) 85%, var(--bg-deep));
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.offers li:hover { transform: translateY(-1px); box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 18%, transparent); }
+
+/* Taverne : messages en bulles, présence marquée d'une lanterne. */
+.messages li {
+  padding: 8px 12px;
+  border-radius: 12px 12px 12px 4px;
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  max-width: 90%;
+}
+.messages li[data-mine] {
+  justify-self: end;
+  border-radius: 12px 12px 4px 12px;
+  background: color-mix(in srgb, var(--ember) 16%, transparent);
+}
+.presence li { display: flex; align-items: center; gap: 8px; }
+.presence li::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 8px var(--ok);
+}
+
+@keyframes beacon { 50% { opacity: 0.45; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .status::before { animation: none !important; }
+  button::after { display: none; }
+}
+@media (max-width: 560px) {
+  .nav { margin: -40px -16px 20px; }
+}
+
+/* Boutons : un dégradé de cuivre, lisible en thème clair comme en thème sombre. */
+button:not(.link):not(.ghost):not(.glow):not(:disabled) { background: var(--button); color: #fff8ee; }
+
+/* Champs et listes déroulantes, accordés aux panneaux. */
+input,
+select,
+textarea {
+  font: inherit;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--bg-deep) 70%, var(--panel));
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 8px;
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.12);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+select {
+  appearance: none;
+  padding: 8px 34px 8px 12px;
+  font-weight: 600;
+  cursor: pointer;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--accent) 50%),
+    linear-gradient(135deg, var(--accent) 50%, transparent 50%);
+  background-position: calc(100% - 17px) 55%, calc(100% - 12px) 55%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+input.amount { padding: 8px 10px; text-align: right; font-variant-numeric: tabular-nums; }
+input:focus,
+select:focus,
+textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft), 0 0 14px var(--accent-soft); }
+select:hover { border-color: var(--accent); }
+.panel.row label { color: var(--accent-strong); }
