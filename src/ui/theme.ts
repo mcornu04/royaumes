@@ -29,6 +29,13 @@ export const theme: Record<string, Look> = {
   ranking: { glyph: '🏆', label: 'Classement' },
   market: { glyph: '⚖️', label: 'Marché' },
   tavern: { glyph: '🍺', label: 'Taverne' },
+  forge: { glyph: '🔥', label: 'Forge' },
+  dagger: { glyph: '🔪', label: 'Dague' },
+  longbow: { glyph: '🏹', label: 'Arc long' },
+  waraxe: { glyph: '🪓', label: 'Hache de guerre' },
+  stoneshield: { glyph: '🛡️', label: 'Bouclier de pierre' },
+  runehammer: { glyph: '🔨', label: 'Marteau runique' },
+  kingsblade: { glyph: '🗡️', label: 'Lame du Roi' },
 }
 
 /** Apparence d'une entité ; une apparence neutre si l'entité n'est pas décrite. */

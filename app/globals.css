@@ -226,3 +226,196 @@ input.amount { width: 5em; }
 
 /* Mes données : un lien présenté comme un bouton */
 a.button { display: inline-block; padding: 8px 14px; border-radius: 8px; background: var(--accent); color: white; text-decoration: none; }
+
+/* Forge : couleurs des raretés, enclume, recettes et armurerie. */
+:root {
+  --common: #8a8378;
+  --rare: #3a7bd5;
+  --epic: #9a4fd0;
+  --legendary: #d99a1e;
+  --ember: #ff8a2b;
+  --ember-hot: #ffd36b;
+}
+[data-rarity='common'] { --rarity: var(--common); }
+[data-rarity='rare'] { --rarity: var(--rare); }
+[data-rarity='epic'] { --rarity: var(--epic); }
+[data-rarity='legendary'] { --rarity: var(--legendary); }
+
+.smith { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.smith > div { display: grid; gap: 2px; }
+.rank { font-family: var(--title-font); font-size: 1.3rem; font-weight: 700; color: var(--accent-strong); }
+.power { text-align: right; }
+.power strong { font-size: 1.8rem; line-height: 1; font-variant-numeric: tabular-nums; color: var(--accent); }
+
+.gem {
+  display: inline-grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  font-size: 1.7rem;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--rarity) 35%, white), color-mix(in srgb, var(--rarity) 18%, transparent) 70%);
+  border: 2px solid color-mix(in srgb, var(--rarity) 70%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--rarity) 12%, transparent), 0 0 18px color-mix(in srgb, var(--rarity) 40%, transparent);
+}
+.gem[data-size='lg'] { width: 104px; height: 104px; font-size: 3.4rem; }
+.gem[data-rarity='legendary'] { animation: halo 2.4s ease-in-out infinite; }
+
+.rarity {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: var(--rarity);
+  background: color-mix(in srgb, var(--rarity) 14%, transparent);
+  vertical-align: middle;
+}
+
+/* L'enclume : un panneau de métal sombre, éclairé par les braises. */
+.anvil {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  margin-top: 20px;
+  padding: 28px 24px;
+  border-radius: var(--radius);
+  color: #f6ead8;
+  background:
+    radial-gradient(60% 90% at 20% 120%, rgb(255 120 30 / 0.0), transparent 70%),
+    linear-gradient(160deg, #3a332d 0%, #1f1a16 60%, #15110e 100%);
+  border: 1px solid #000;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), var(--shadow);
+  transition: background 0.6s;
+}
+.anvil[data-state='forging'],
+.anvil[data-state='ready'] {
+  background:
+    radial-gradient(60% 90% at 20% 120%, rgb(255 120 30 / 0.45), transparent 70%),
+    linear-gradient(160deg, #3a332d 0%, #1f1a16 60%, #15110e 100%);
+}
+.anvil[data-state='forging'] { animation: embers 1.8s ease-in-out infinite alternate; }
+.anvil-piece { position: relative; flex: none; }
+.anvil-info { display: grid; gap: 10px; flex: 1; min-width: 200px; }
+.anvil-title { font-family: var(--title-font); font-size: 1.5rem; font-weight: 700; }
+.anvil-note { margin: 0; color: #d9c8b1; }
+.anvil .actions { margin-top: 2px; }
+
+.heat {
+  display: block;
+  height: 12px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.08);
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.5);
+  overflow: hidden;
+}
+.heat > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #b8321a, var(--ember) 55%, var(--ember-hot));
+  background-size: 200% 100%;
+  box-shadow: 0 0 12px var(--ember);
+  transition: width 1s linear;
+  animation: shine 1.6s linear infinite;
+}
+
+.sparks { position: absolute; inset: 0; pointer-events: none; }
+.sparks i {
+  position: absolute;
+  left: 50%;
+  bottom: 18%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--ember-hot);
+  box-shadow: 0 0 6px 2px var(--ember);
+  opacity: 0;
+  animation: spark 1.4s ease-out infinite;
+}
+.sparks i:nth-child(1) { --dx: -38px; animation-delay: 0s; }
+.sparks i:nth-child(2) { --dx: 30px; animation-delay: 0.18s; }
+.sparks i:nth-child(3) { --dx: -16px; animation-delay: 0.36s; }
+.sparks i:nth-child(4) { --dx: 44px; animation-delay: 0.54s; }
+.sparks i:nth-child(5) { --dx: -48px; animation-delay: 0.72s; }
+.sparks i:nth-child(6) { --dx: 12px; animation-delay: 0.9s; }
+.sparks i:nth-child(7) { --dx: -26px; animation-delay: 1.08s; }
+.sparks i:nth-child(8) { --dx: 36px; animation-delay: 1.26s; }
+
+button.ghost {
+  background: transparent;
+  color: #f6ead8;
+  box-shadow: inset 0 0 0 1px rgb(246 234 216 / 0.35);
+}
+button.glow {
+  background: linear-gradient(180deg, var(--ember-hot), var(--ember));
+  color: #2b1606;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+/* Recettes : des cartes aux couleurs de leur rareté. */
+.recipes, .armory {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+}
+.recipe, .armory li {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 6px;
+  padding: 18px 14px 16px;
+  border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--rarity) 16%, transparent), transparent 55%),
+    var(--panel);
+  border: 1px solid color-mix(in srgb, var(--rarity) 45%, transparent);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.recipe:hover { transform: translateY(-2px); box-shadow: 0 8px 22px color-mix(in srgb, var(--rarity) 28%, transparent); }
+.recipe[data-rarity='legendary']::after,
+.armory li[data-rarity='legendary']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 35%, rgb(255 236 170 / 0.35) 50%, transparent 65%);
+  background-size: 250% 100%;
+  animation: sweep 3.2s ease-in-out infinite;
+  pointer-events: none;
+}
+.recipe[data-locked='true'] { filter: grayscale(0.85); opacity: 0.6; }
+.recipe[data-locked='true']:hover { transform: none; box-shadow: none; }
+.recipe-name { font-family: var(--title-font); font-weight: 700; font-size: 1.1rem; }
+.recipe-meta { font-size: 0.85rem; }
+.cost { display: inline-flex; gap: 10px; font-variant-numeric: tabular-nums; }
+.lock { font-size: 0.85rem; font-weight: 600; color: var(--muted); padding: 8px 0; }
+.hallmark { font-size: 0.8rem; font-style: italic; }
+
+@keyframes halo {
+  50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--rarity) 18%, transparent), 0 0 30px color-mix(in srgb, var(--rarity) 70%, transparent); }
+}
+@keyframes embers { to { box-shadow: inset 0 -30px 60px -30px rgb(255 120 30 / 0.5), var(--shadow); } }
+@keyframes shine { to { background-position: -200% 0; } }
+@keyframes spark {
+  0% { opacity: 1; transform: translate(0, 0) scale(1); }
+  100% { opacity: 0; transform: translate(var(--dx), -70px) scale(0.3); }
+}
+@keyframes pulse { 50% { box-shadow: 0 0 18px var(--ember); } }
+@keyframes sweep { 0% { background-position: 150% 0; } 60%, 100% { background-position: -150% 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .gem, .anvil, .heat > span, .sparks i, button.glow, .recipe::after, .armory li::after { animation: none !important; }
+}
+@media (max-width: 560px) {
+  .anvil { flex-direction: column; text-align: center; }
+  .power { text-align: left; }
+}
