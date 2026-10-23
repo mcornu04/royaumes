@@ -3,8 +3,7 @@
 - Auteur : Mathis Cornuault
 - Modules : `forge` (la Forge) et `tournament` (le Tournoi)
 - Adresse du déploiement : https://royaumes-one.vercel.app
-- Fiche de cadrage : non rédigée sous forme de fichier ; le périmètre réalisé est décrit
-  ci-dessous, règle par règle (voir « Écarts avec la fiche de cadrage »).
+- Fiches de cadrage : [la Forge](fiche-cadrage-forge.md) et [le Tournoi](fiche-cadrage-tournoi.md)
 
 Deux modules ont été réalisés. La **Forge** est le module principal de l'évaluation : le joueur
 y commande des armes et des armures, payées en ressources de son village par une saga, forgées
@@ -68,11 +67,12 @@ déroulent sous leurs yeux.
 
 ## Écarts avec la fiche de cadrage
 
-- La fiche de cadrage n'a pas été rédigée sous forme de fichier : le périmètre a été arrêté
-  avant la réalisation (recettes, règles, stockage, communication, bonus visés), puis réalisé
-  tel quel. Les règles métier ci-dessus en tiennent lieu.
+- Une fiche de cadrage a été rédigée pour chacun des deux modules ; leurs règles métier sont
+  celles des tableaux ci-dessus, numérotées F-R1 à F-R7 et T-R1 à T-R7 dans le même ordre.
 - Le Tournoi est un second module, ajouté à la Forge : il s'appuie sur elle (rang de compagnon)
   et sur le Village (niveau 5 des bâtiments).
+- Tournoi, tâche quotidienne : ajoutée pendant la réalisation pour rembourser la dette DT-016
+  (tournois terminés jamais retirés de la liste) ; elle ne change aucune règle métier.
 - Évolutions de l'existant, toutes passées par les contrats ou consignées : une constante
   exportée par les contrats du Village (`STARTING_LEVELS`) ; la projection du Classement en
   version 3, avec une migration de son propre schéma (`0014_classement_tournois.sql`) et une

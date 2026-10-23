@@ -208,7 +208,8 @@ sans la première ; sans la seconde, la route des tâches quotidiennes reste fer
 - [Registre des traitements](docs/rgpd/registre-traitements.md)
 - [Revue de conformité au RGPD](docs/rgpd/revue-conformite.md)
 - [Bilan technique](docs/bilan-technique.md)
-- [Rendu de l'évaluation](docs/evaluation/rendu.md)
+- [Rendu de l'évaluation](docs/evaluation/rendu.md), et les fiches de cadrage de la
+  [Forge](docs/evaluation/fiche-cadrage-forge.md) et du [Tournoi](docs/evaluation/fiche-cadrage-tournoi.md)
 
 ## Conventions
 
