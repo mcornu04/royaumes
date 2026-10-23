@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { sql } from 'drizzle-orm'
 import { describe, expect, it } from 'vitest'
@@ -34,6 +34,25 @@ describe("Fonctions d'aptitude", () => {
     for (const module of withData) {
       const file = path.join(process.cwd(), 'src/modules', module, 'personal-data.ts')
       expect(existsSync(file), `${module} n'a pas de fichier personal-data.ts`).toBe(true)
+    }
+  })
+
+  it("ne laisse aucun domaine lire l'horloge ni le hasard : l'instant et la graine lui sont fournis", () => {
+    // L'échéance d'une pièce de la Forge et le tableau d'un tournoi ne sont testables, et un
+    // tournoi rejouable à l'identique, que si le domaine reçoit l'instant et la graine en
+    // paramètres. Cette règle protège toutes les fonctions pures des modules.
+    const forbidden = /Date\.now\(|new Date\(|Math\.random\(/
+    for (const module of MODULES) {
+      const domain = path.join(process.cwd(), 'src/modules', module, 'domain')
+      if (!existsSync(domain)) continue
+      for (const file of readdirSync(domain).filter(
+        (f) => f.endsWith('.ts') && !f.endsWith('.test.ts'),
+      )) {
+        const source = readFileSync(path.join(domain, file), 'utf8')
+        expect(forbidden.test(source), `${module}/domain/${file} lit l'horloge ou le hasard`).toBe(
+          false,
+        )
+      }
     }
   })
 })
