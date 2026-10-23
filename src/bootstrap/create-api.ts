@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { createDungeonModule } from '@/modules/dungeon'
 import { createForgeModule } from '@/modules/forge'
 import { createMarketModule } from '@/modules/market'
+import { createQuestsModule } from '@/modules/quests'
 import { createRankingModule } from '@/modules/ranking'
 import { createRealmModule, createRemoteRealmModule } from '@/modules/realm'
 import { createSystemModule } from '@/modules/system'
@@ -100,6 +101,16 @@ export function createApi({
     dispatch: () => dispatcher.dispatch(),
     clock,
   })
+  // Les Quêtes lisent l'activité des autres modules dans le journal, et celle de la Taverne
+  // par son point d'entrée ; elles versent leurs récompenses par la boîte d'envoi.
+  const quests = createQuestsModule({
+    store,
+    db,
+    projections,
+    tavern: tavern.activity,
+    dispatch: () => dispatcher.dispatch(),
+    clock,
+  })
 
   // Droits des joueurs : chaque module fournit ses données personnelles. L'identité vient
   // en dernier : tant qu'elle n'est pas effacée, le joueur peut relancer un effacement interrompu.
@@ -113,6 +124,7 @@ export function createApi({
       tavern.personalData,
       forge.personalData,
       tournament.personalData,
+      quests.personalData,
       createIdentityPersonalData(db),
     ],
     clock,
@@ -203,6 +215,7 @@ export function createApi({
   app.use('/tavern/*', requireUser(auth))
   app.use('/forge/*', requireUser(auth))
   app.use('/tournament/*', requireUser(auth))
+  app.use('/quests/*', requireUser(auth))
   app.use('/account', requireUser(auth))
   app.use('/account/*', requireUser(auth))
   app.use('/stream/*', requireUser(auth))
@@ -218,6 +231,7 @@ export function createApi({
     .route('/tavern', tavern.api)
     .route('/forge', forge.api)
     .route('/tournament', tournament.api)
+    .route('/quests', quests.api)
     .route('/account', createPrivacyApi(privacy))
     .route('/stream', createRealtimeApi({ store, policies, ...realtime }))
 }

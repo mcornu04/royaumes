@@ -57,6 +57,12 @@ export function createTavernModule({ db, clock }: TavernModuleDeps) {
     api: createTavernApi(service),
     channelPolicy,
     dailyTask: service.purge,
+    // Activité des joueurs, lue par les Quêtes du jour : la Taverne n'enregistre pas
+    // d'événements, son activité ne peut donc pas être lue dans le journal.
+    activity: {
+      messagesSince: async (playerId: string, since: number) =>
+        (await repo.postedSince(playerId, since)).length,
+    },
     personalData: createTavernPersonalData(db),
   }
 }
