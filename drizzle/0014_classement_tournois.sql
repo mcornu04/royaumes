@@ -1,0 +1,1 @@
+ALTER TABLE "ranking"."players" ADD COLUMN "tournaments_won" integer DEFAULT 0 NOT NULL;

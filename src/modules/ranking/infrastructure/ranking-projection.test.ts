@@ -70,6 +70,18 @@ describe('Projection du classement', () => {
     expect(await entryOf('carol')).toMatchObject({ label: 'Seigneur de Valombre', upgrades: 2 })
   })
 
+  it('compte les tournois remportés par un joueur, et non ceux des chevaliers', async () => {
+    const awarded = (championId: string | null): NewEvent => ({
+      type: 'PrizesAwarded',
+      data: { championId, finalistId: null },
+    })
+    await store.append('tournament-t1', 0, [awarded('alice')])
+    await store.append('tournament-t2', 0, [awarded('alice')])
+    await store.append('tournament-t3', 0, [awarded(null)])
+    expect(await entryOf('alice')).toMatchObject({ tournamentsWon: 2 })
+    expect((await reader.top(20)).entries).toHaveLength(1)
+  })
+
   it('retient le meilleur butin des expéditions gagnées', async () => {
     await store.append('dungeon-g1', 0, [created('alice'), ended('won', 25, ['alice'])])
     await store.append('dungeon-g2', 0, [created('alice'), ended('won', 40, ['alice'])])

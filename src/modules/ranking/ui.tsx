@@ -88,6 +88,7 @@ export function RankingScreen({ userId }: { userId: string }) {
                 <th>Rang</th>
                 <th>Joueur</th>
                 <th>Victoires</th>
+                <th>Tournois</th>
                 <th>Expéditions</th>
                 <th>
                   <Entity kind="gold" />
@@ -105,6 +106,7 @@ export function RankingScreen({ userId }: { userId: string }) {
                   <td>{entry.rank}</td>
                   <td>{entry.label}</td>
                   <td>{entry.gamesWon}</td>
+                  <td>{entry.tournamentsWon}</td>
                   <td>{entry.gamesPlayed}</td>
                   <td>{entry.gold}</td>
                   <td>{entry.bestLoot}</td>

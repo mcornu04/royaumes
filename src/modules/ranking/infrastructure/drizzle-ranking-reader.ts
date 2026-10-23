@@ -39,6 +39,7 @@ export function createDrizzleRankingReader(db: Db, projections: ProjectionRunner
         gold: row.gold,
         upgrades: row.upgrades,
         bestLoot: row.bestLoot,
+        tournamentsWon: row.tournamentsWon,
       }))
       return { position, entries }
     },

@@ -1,6 +1,7 @@
 import { eq, inArray, sql } from 'drizzle-orm'
 import { GAME_CHANNEL_PREFIX } from '@/modules/dungeon/contracts'
 import { VILLAGE_CHANNEL_PREFIX } from '@/modules/realm/contracts'
+import { TOURNAMENT_STREAM_PREFIX } from '@/modules/tournament/contracts'
 import type { StoredEvent } from '@/platform/event-store/event-store'
 import type { DbTransaction, Projection } from '@/platform/projection/projection'
 import { gamePlayers, players } from './schema'
@@ -25,6 +26,10 @@ interface GameEndedData {
 interface VillageFoundedData {
   name: string
 }
+interface PrizesAwardedData {
+  /** Joueur champion du tournoi ; null si un chevalier de l'ordinateur l'a remporté. */
+  championId: string | null
+}
 
 /** Identifiant tiré du nom d'un flux : « dungeon-7f3a » donne « 7f3a ». */
 const idFrom = (event: StoredEvent, prefix: string) => event.stream.slice(prefix.length)
@@ -40,12 +45,19 @@ async function recordPlayer(tx: DbTransaction, gameId: string, playerId: string,
 
 /**
  * Projection du classement : met à jour les totaux des joueurs à partir du journal.
- * Version 2 : ajout du meilleur butin.
+ * Version 2 : ajout du meilleur butin. Version 3 : ajout des tournois remportés.
  */
 export const rankingProjection: Projection = {
   name: 'ranking',
-  version: 2,
-  eventTypes: ['GameCreated', 'PlayerJoined', 'GameEnded', 'VillageFounded', 'BuildingUpgraded'],
+  version: 3,
+  eventTypes: [
+    'GameCreated',
+    'PlayerJoined',
+    'GameEnded',
+    'VillageFounded',
+    'BuildingUpgraded',
+    'PrizesAwarded',
+  ],
 
   async apply(event, tx) {
     switch (event.type) {
@@ -102,6 +114,20 @@ export const rankingProjection: Projection = {
           .onConflictDoUpdate({
             target: players.playerId,
             set: { upgrades: sql`${players.upgrades} + 1` },
+          })
+        return
+      }
+
+      case 'PrizesAwarded': {
+        // Seul le champion d'un tournoi est compté, s'il est un joueur.
+        const data = event.data as unknown as PrizesAwardedData
+        if (!event.stream.startsWith(TOURNAMENT_STREAM_PREFIX) || !data.championId) return
+        await tx
+          .insert(players)
+          .values({ playerId: data.championId, tournamentsWon: 1 })
+          .onConflictDoUpdate({
+            target: players.playerId,
+            set: { tournamentsWon: sql`${players.tournamentsWon} + 1` },
           })
         return
       }

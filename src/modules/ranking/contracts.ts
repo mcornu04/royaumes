@@ -17,6 +17,8 @@ export interface RankingEntry {
   upgrades: number
   /** Or rapporté par la meilleure expédition gagnée. */
   bestLoot: number
+  /** Tournois remportés. */
+  tournamentsWon: number
 }
 
 /** Classement renvoyé par l'API. */
